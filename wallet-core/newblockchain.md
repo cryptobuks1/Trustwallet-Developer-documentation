@@ -4,22 +4,22 @@ If you haven't, first read the [guide to contributing](contributing.md). It cont
 
 ## Blockchains, Coins and Tokens
 
-* If you are interested in adding a new Token (e.g. ERC20): in this case no code changes are needed, see the [Assets](../assets/add_new_asset.md) section.
+* If you are interested in adding a new Token, e.g. ERC20, in this case no code changes are needed, see the [Assets](../assets/add_new_asset.md) section for more details. 
 * For new coins you need to implement address handling and signing functionality in wallet-core (described in this section).  For new coins on already supported blockchains, or variations of already supported blockchains, please consider proper reuse of existing implementation.
 
 ## Integration Criteria
 
-The Trust Wallet development team is always striving to add more blockchains that will be essential for developers and wallet users. We choose blockchains carefully that will have the biggest impact for our community.
+The Trust Wallet development team is always striving to add more blockchains that will be essential for developers and wallet users. We choose blockchains carefully based on the impact they will have for our community. 
 
-In general: 
+The general integration criteria is as follows: 
 
-- The blockchain has launched mainnet and stably run at least 3 ~ 6 months without any major security incidents.
+- The blockchain has launched mainnet and has stably run for at least 3 ~ 6 months without major security incidents.
 - The blockchain has extensive public documentation and tools available for developers to use.
-- The native coin is listed in the top 30 coins on CoinMarketCap.
+- The native coin is listed in the top 30 coins on CoinMarketCap and proposal gets approved on [https://governance.trustwallet.com].
 - The project needs to provide API/JSON-RPC access to the node with a load balancing setup for private use, see detail requirements [here](https://developer.trustwallet.com/wallet-core/rpc-requirements).
 - The native coin is tradable on major exchanges.
 
-After integrate into Trust Wallet, project should also provide timely support for any urgent matters.
+After integrating into Trust Wallet projects are expected to provide timely support for any urgent matters.
 
 ## Overview
 
@@ -38,22 +38,23 @@ It helps to pick an existing coin, and refer to its implementation.  Try to pick
 Note that unit **tests** are crucial in ensuring quality needed for multi-coin support.  Functionality here can be well unit-tested, so don't ignore them.
 Coverage must not decrease!  This is enforced automatically in the valiation of the pull requests.
 
-## Blockchain definitions
+## Blockchain definition
 
-The first step to adding a blockchain is to define its configuration parameters. Add the definition to the `coins.json` file.
-Then run `tools/generate-files` to generate the C++ code from that.  Add the corresponding definition to `TWCoinType.h`.
+The first step to add a blockchain is to define its coin configuration. Add the definition to the `coins.json` file.  
 
-## Skeleton
+## Skeleton generation
 
-Scaffolding for a new coin is helped by a set of template files.
-Execute the command `codegen/bin/newcoin <coinid>`, where `newcoin <coinid>` is the ID of the new coin from `coins.json`.  Check the generated files and their location.
-Usage of the templates is optional, but recommended.
+Execute the command `codegen/bin/newcoin <coinid>`, where `newcoin <coinid>` is the ID of the new coin from `coins.json`. This will generate skeleton `Address`, `Signer`, `Entry` classes, proto file, C interface for Signer and corresponding tests.
+
+Run `tools/generate-files` to generate message proto files.
+
+Run `cmake` to include the new files in the build (`cmake -H. -Bbuild -DCMAKE_BUILD_TYPE=Debug`), and build the project.
 
 ## Definition tests, first commit
 
 Review tests in `tests/X/TWCoinTypeTests.cpp` (where `X` is the name of the blockchain), exactly as in other blockchains.
 Run the tests and make sure everything is passing before moving on to the next step. 
-Create a commit with this change \(don't create a pull request yet\).
+You should reate a commit with this change, \(but don't create a pull request yet\).
 
 *Note:* don't forget to add new files to git.
 *Note:* don't forget to re-run `cmake` before building, to include new files in the build.
@@ -65,7 +66,14 @@ Implement the required functionality in C++. The code should be placed in the `s
 Don't just dump an existing codebase in the repo. The code needs to follow the code style and use existing hashing and cryptographic functionality if possible.
 Adding new dependencies is something we want to avoid at all costs. We want to keep the codebase and the binary library as small as possible.
 
+
 If you do need to add a new cryptographic function or other building block please do so as a separate PR from the blockchain implementation.
+
+### Entry point for coin functionality
+
+The `Entry` class should be kept minimal, it should have no logic, just call into relevant Address, Signer, etc. classes.
+
+Include the new coin Entry class in the list of coin dispatchers, in `src/Coin.cpp` (an include, a new instance in the list of dispatcher instances).
 
 ### Address encoding/decoding
 
@@ -88,17 +96,17 @@ For an example of this have a look at Binance's [Signer.h](https://github.com/tr
 
 The tests should be put in `tests/X` where `X` is the name of the blockchain. All C++ code needs to be unit tested.
 
-The C++ implementation with tests should be the second commit.
+The C++ implementation with tests should be a separate commit.
 
 ## C Interface
 
-Once you are satisfied with your C++ implementation write a C interface for it. The C interface needs to be as small as possible so that clients don't need to worry about implementation details. If you are implementing blockchain `Xxx` create a `TWXxxAddress.h` to handle addresses associated to the blockchain and `TWXxxSigner.h` to handle transaction signing.
+Once you are satisfied with your C++ implementation, time to write some tests for C interface, usually you don't need to change the generated C interfaces, those C interfaces are made as small as possible so that clients don't need to worry about implementation details. If you are implementing blockchain `Xxx`, handle and implement it first in `TWAnyAddress.h` and `TWAnySigner.h` before writing tests.
 
 Please make sure you catch all C++ exceptions in C implementation.
 
-Generate the idiomatic interface code by running `tools/generate-files`. If possible test the interface on Android, iOS and TypeScript. Optionally add integration test to each platform. This is required only if the interface is significantly different than the interface used for other blockchains.
+If possible test the interface on Android, iOS. Optionally add integration test to each platform. This is required only if the interface is significantly different than the interface used for other blockchains.
 
-The C interface, any Protobuf models, and integration tests should be third commit.
+The C interface, any Protobuf models, and integration tests should be a separate commit.
 
 ## Blockchain checklist
 
@@ -106,29 +114,27 @@ The above steps are summarized below as a checklist:
 
 * [ ] Coin Definition:
   * [ ] Add the coin definition to `coins.json`.
-  * [ ] Execute `tools/generate-files` to generate coin-specific generated files.
-  * [ ] Extend `TWCoinType.h` and `TWBlockchain.h`.
-  * [ ] Extend `src/Coin.cpp`.
-* [ ] Generate skeleton, using `codegen/bin/newcoin <coinid>`
-  * [ ] Create tests in `tests/X/TWCoinTypeTests.cpp`.
+  * [ ] Execute `codegen/bin/newcoin <coinid>`.
+  * [ ] Execute `tools/generate-files`.
+  * [ ] Add coin dispatcher to `src/Coin.cpp`.
+  * [ ] Create tests in `tests/Xxx/TWCoinTypeTests.cpp`.
 * [ ] Implement functionality in C++. Put it in a subfolder of `src/`.
+  * [ ] Entry.
   * [ ] Address.
   * [ ] Transaction \(if necessary\).
   * [ ] Signer.
 * [ ] Write unit tests. Put them in a subfolder of `tests/`.
   * [ ] `Mnemonic phrase - > Address` derivation test. Put this test in the `CoinTests.cpp` file.
-  * [ ] Transaction signing tests, at least a mainnet transaction test.
+  * [ ] Transaction signing tests, at least one mainnet transaction test.
   * [ ] Add stake, unstake, get rewards tests if the blockchain is PoS like.
 * [ ] Add relevant constants in `TWEthereumChainID`, `TWCurve`, etc., as necessary.
-* [ ] Write C interface header in `include/TrustWalletCore` and implement the interface in `src/interface`.
-  * [ ] Address interface.
-  * [ ] Signing interface.
+* [ ] Implement C interface in `src/interface`.
+  * [ ] Add tests for `TWAnyAddress` and `TWAnySigner`
 * [ ] Validate generated code in Android an iOS projects. Write integration tests for each.
 * [ ] Extend central derivation and validation tests: make sure the following tests are extended with the new coin: `CoinAddressDerivationTests.cpp` and 
 `CoinAddressValidationTests.cpp`,
 `TWHRPTests.cpp`,
 `CoinAddressDerivationTests.kt`,
-`CoinType+Address.swift`,
 `CoinAddressDerivationTests.swift`.
 
 * [ ] Upload coin icon to [trustwallet/assets](https://github.com/trustwallet/assets/#how-to-add-asset) if necessary.

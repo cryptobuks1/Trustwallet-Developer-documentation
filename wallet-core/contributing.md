@@ -1,6 +1,6 @@
 # Contributing
 
-We want to make Trust Wallet Core as good as it can be. If you want to contribute your help is greatly appreciated. Contributing is also a great way to learn more about blockchain technology and a great way improving Trust Wallet. To make the process as smooth as possible please read this document and follow our guidelines. We are happy to review your code but please ensure that you have a [clean pull request](contributing.md#pull-requests).
+We want to make Trust Wallet Core as good as it can be. If you want to contribute your help is greatly appreciated. Contributing is also a great way to learn more about blockchain technology and improve Trust Wallet. To make the process as smooth as possible please read this document and follow our guidelines. We are happy to review your code but please ensure that you have a [clean pull request](contributing.md#pull-requests).
 
 Wallet Core implements the cryptographic functionality of blockchains. This includes elliptic curve cryptography, hashing, address derivation and transaction signing. However it _does not_ implement other aspects like networking and UI. Wallet core behaves like a black box for higher level users like Trust Wallet; it takes inputs from the blockchain and the user \(for instance UTXOs, private keys, etc.\) and produces an output \(like a signed and encoded transaction\). Keep this in mind when adding functionality.
 
@@ -138,7 +138,13 @@ The wallet core code generator also parses coin configuration defined in `coins.
     "base58Hasher": "sha256d",                                  // [optional] xpub / xprv base58 hasher, base58(hasher(hd node data))
     "xpub": "zpub",                                             // [optional] hd version bytes defined in slip-0132
     "xprv": "zprv",                                             // [optional] hd version bytes defined in slip-0132
-    "explorer": "https://blockchair.com/bitcoin/transaction/",  // block explorer used to view transaction detail     
+    "explorer": {
+        "url": "https://blockchair.com",                        // block explorer
+        "txPath": "/bitcoin/transaction/",                      // path to view transaction detail
+        "accountPath": "/bitcoin/address/",                     // path to view account / address detail
+        "sampleTx": "0607f62530b68cfcc91c57a1702841dd399a899d0eecda8e31ecca3f52f01df2", // [optional] sample transaction id
+        "sampleAccount": "17A16QmavnUfCW11DAApiJxp7ARnxN5pGX"                           // [optional] sample account / address
+    },
     "info": {
         "url": "https://ethereum.org", // project homepage
         "client": "https://github.com/ethereum/go-ethereum", // rpc node to query balance, utxo, send transactions

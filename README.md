@@ -5,10 +5,9 @@ Welcome to the Trust Wallet developer documentation. Here you can find documenta
 * [Wallet Core](wallet-core/wallet-core.md)
 * [Blockatlas](blockatlas/blockatlas.md)
 * [WalletConnect](wallet-connect/wallet-connect.md)
-* [TrustProvider](trust-provider/trust-provider.md)
+* [Trust SDK](trust-sdk/trust-sdk.md)
 * [Assets](assets/add_new_asset.md)
 * [Deep Linking](deeplinking/deeplinking.md)
-* [Staking](platform/staking.md)
-* [Roadmap](roadmap/roadmap.md)
+* [DApps](dapps/listing-guide.md)
 
-Want to discuss more? join our [Trust Developers chat](https://t.me/walletcore) on Telegram.
+Want to discuss more? join our [Trust Developers chat](https://t.me/trust_developers) on Telegram.

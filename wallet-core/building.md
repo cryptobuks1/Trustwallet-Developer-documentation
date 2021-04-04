@@ -1,4 +1,4 @@
-# Building
+# Building and Testing
 
 Find here instructions for building the Wallet Core library locally.
 
@@ -16,9 +16,9 @@ The following *development platforms* are supported:
 
 ## Build Methods
 
-Wallet Core can be build inside the provided Docker image, or natively.
+Wallet Core can be build inside a Docker image, or natively.
 
-* Inside **Docker** image:  This way is easier to get the prerequisites, as they are all inside the provided Docker image.  However, all building has to be done inside the Docker image.
+* Inside **Docker** image:  This way is easier to get the prerequisites, as they are all inside a Docker image. However, all building has to be done inside the Docker image.
 * Natively, in your dev OS (macOS, Linux).
 
 ## Prerequisites
@@ -93,14 +93,20 @@ If you'd rather use and IDE for building and debugging you can specify the `-G` 
 
 ## Building inside Docker image
 
-Here are the instructions to build Wallet Core within the provided Docker image.
+Here are the instructions to build Wallet Core with the provided `Dockerfile`.
 
 Prerequisite is a working Docker installation.
 
-The command for starting a new Docker container with the wallet-core image, and a shell within it:
+The command for building the Docker image:
 
 ```shell
-docker run -i -t trustwallet/wallet-core /bin/bash
+docker build docker/wallet-core --tag wallet-core-dev
+```
+
+Then launch the container:
+
+```shell
+docker run -i -t wallet-core-dev /bin/bash
 ```
 
 Inside the container the build commands can be executed (as described above; note that install-dependencies is not necessary):
@@ -131,3 +137,23 @@ exit
 
 Building on Linux is possible, but not fully supported, it requires some extra work. If you have access to macOS we highly recommend developing on that platform.  Using the Docker image is also recommended.
 Otherwise, the prerequisites have to be installed manually.
+
+## Unit tests with Coverage
+
+Coverage info can be seen in the GitHub [CI builds](https://codecov.io/gh/trustwallet/wallet-core),
+but can be generated locally as well.
+
+Steps for running unit tests with coverage measurement, and creating report locally:
+
+```bash
+cmake -H. -Bbuild -DCMAKE_BUILD_TYPE=Debug -DCODE_COVERAGE=ON
+make -Cbuild -j12 tests
+find . -name "*.gcda" -exec rm {} \;
+./build/tests/tests tests --gtest_filter=*
+rm -rf coverage.info coverage/
+tools/coverage html
+```
+
+See also 
+[tools/coverage](https://github.com/trustwallet/wallet-core/blob/master/tools/coverage) and
+[linux-ci.yml](https://github.com/trustwallet/wallet-core/blob/master/.github/workflows/linux-ci.yml).

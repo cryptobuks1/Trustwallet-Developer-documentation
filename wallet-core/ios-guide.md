@@ -3,7 +3,7 @@
 Wallet Core is available on the iOS platform, it comes with *Swift* bindings.
 In this guide we show how to use it.
 
-A sample application is available at: https://github.com/trustwallet/wallet-core/tree/master/samples/ios .
+A sample application is available at: https://github.com/trustwallet/wallet-core/tree/master/samples/osx .
 
 ## Prerequisites
 
@@ -17,7 +17,7 @@ A sample application is available at: https://github.com/trustwallet/wallet-core
 An easy way to add Wallet Core dependency to an iOS project is through *CocoaPods*, like this (the exact version may change in the future):
 
 ```
-  pod 'TrustWalletCore', '~> 0.12.30'
+  pod 'TrustWalletCore'
 ```
 
 The dependency can be installed simply by `pod install`:
@@ -34,7 +34,7 @@ Please refer to the [Wallet Usage Guide](wallet-core-usage.md) for detailed expl
 Accessing Wallet Core functionality requires one import statement:
 
 ```swift
-import TrustWalletCore
+import WalletCore
 ```
 
 ### Wallet Management
@@ -89,6 +89,6 @@ let signerInput = EthereumSigningInput.with {
     $0.amount = Data(hexString: "0348bca5a16000")!
     $0.privateKey = wallet.getKeyForCoin(coin: .ethereum).data
 }
-let signerOutput = EthereumSigner.sign(input: signerInput)
-print(" data:   ", signerOutput.encoded.hexString)
+let output: EthereumSigningOutput = AnySigner.sign(input: signerInput, coin: .ethereum)
+print(" data:   ", output.encoded.hexString)
 ```

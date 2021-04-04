@@ -152,15 +152,15 @@ script | 0x76a9146cfa0e96c34fce09c0e4e671fcd43338c14812e588ac | A script (Script
 Here is the Swift sample code for signing a real world Bitcoin Cash [transaction](https://blockchair.com/bitcoin-cash/transaction/96ee20002b34e468f9d3c5ee54f6a8ddaa61c118889c4f35395c2cd93ba5bbb4)
 
 ```swift
-let utxoTxId = Data(hexString: "050d00e2e18ef13969606f1ceee290d3f49bd940684ce39898159352952b8ce2")!
+let utxoTxId = Data(hexString: "050d00e2e18ef13969606f1ceee290d3f49bd940684ce39898159352952b8ce2")! // latest utxo for sender, "txid" field from blockbook utxo api: https://github.com/trezor/blockbook/blob/master/docs/api.md#get-utxo
 let privateKey = PrivateKey(data: Data(hexString: "7fdafb9db5bc501f2096e7d13d331dc7a75d9594af3d251313ba8b6200f4e384")!)!
 let address = CoinType.bitcoinCash.deriveAddress(privateKey: privateKey)
 
 let utxo = BitcoinUnspentTransaction.with {
     $0.outPoint.hash = Data(utxoTxId.reversed()) // reverse of UTXO tx id, Bitcoin internal expects network byte order
-    $0.outPoint.index = 2                        // outpoint index of this this UTXO
+    $0.outPoint.index = 2                        // outpoint index of this this UTXO, "vout" field from blockbook utxo api
     $0.outPoint.sequence = UINT32_MAX
-    $0.amount = 5151                             // value of this UTXO
+    $0.amount = 5151                             // value of this UTXO, "value" field from blockbook utxo api
     $0.script = BitcoinScript.buildForAddress(address: address, coin: .bitcoinCash).data // Build lock script from address or public key hash
 }
 
@@ -169,15 +169,13 @@ let input = BitcoinSigningInput.with {
     $0.amount = 600
     $0.byteFee = 1
     $0.toAddress = "1Bp9U1ogV3A14FMvKbRJms7ctyso4Z4Tcx"
-    $0.changeAddress = "1FQc5LdgGHMHEN9nwkjmz6tWkxhPpxBvBU"
+    $0.changeAddress = "1FQc5LdgGHMHEN9nwkjmz6tWkxhPpxBvBU" // can be same sender address
     $0.utxo = [utxo]
     $0.privateKey = [privateKey.data]
 }
 
-let result = BitcoinTransactionSigner(input: input).sign()
-guard result.success else { return }
-let output = try BitcoinSigningOutput(unpackingAny: result.objects[0])
-
+let output: BitcoinSigningOutput = AnySigner.sign(input: input, coin: .bitcoinCash)
+guard output.error.isEmpty else { return }
 // encoded transaction to broadcast
 print(output.encoded)
 ```
@@ -201,20 +199,17 @@ let input = BitcoinSigningInput.with {
     $0.toAddress = "t1QahNjDdibyE4EdYkawUSKBBcVTSqv64CS"
     $0.coinType = CoinType.zcash.rawValue
     $0.privateKey = [Data(hexString: "a9684f5bebd0e1208aae2e02bc9e9163bd1965ad23d8538644e1df8b99b99559")!]
+    $0.plan = BitcoinTransactionPlan.with {
+        $0.amount = 488000
+        $0.fee = 6000
+        $0.change = 0
+        // Sapling branch id
+        $0.branchID = Data(hexString: "0xbb09b876")!
+        $0.utxos = utxos
+    }
 }
 
-let plan = BitcoinTransactionPlan.with {
-    $0.amount = 488000
-    $0.fee = 6000
-    $0.change = 0
-    // Sapling branch id
-    $0.branchID = Data(hexString: "0xbb09b876")!
-    $0.utxos = utxos
-}
-
-let result = ZcashTransactionSigner(input: input, plan: plan).sign()
-guard result.success else { return }
-let output = try BitcoinSigningOutput(unpackingAny: result.objects[0])
+let output: BitcoinSigningOutput = AnySigner.sign(input: input, coin: .zcash)
 
 // encoded transaction to broadcast
 print(output.encoded)
@@ -241,7 +236,7 @@ Several parameters, like the current nonce and gasPrice values can be obtained f
 Code example to fill in the signer input parameters:
 
 ```swift
-let signerInput = EthereumSigningInput.with {
+let input = EthereumSigningInput.with {
     $0.chainID = Data(hexString: "01")!
     $0.gasPrice = Data(hexString: "d693a400")! // decimal 3600000000
     $0.gasLimit = Data(hexString: "5208")! // decimal 21000
@@ -254,8 +249,8 @@ let signerInput = EthereumSigningInput.with {
 Then Signer is invoked, and the signed and encoded output retrieved:
 
 ```swift
-let signerOutput = EthereumSigner.sign(input: signerInput)
-print(" data:   ", signerOutput.encoded.hexString)
+let output: EthereumSigningOutput = AnySigner.sign(input: input, coin: .ethereum)
+print(" data:   ", output.encoded.hexString)
 ```
 
 For more details on Ethereum transactions, check the Ethereum documentation.  A few resources are here:
@@ -290,18 +285,18 @@ let token = BinanceSendOrder.Token.with {
 }
 
 // A.k.a from / sender
-let input = BinanceSendOrder.Input.with {
+let orderInput = BinanceSendOrder.Input.with {
     $0.address = CosmosAddress(hrp: .binance, publicKey: publicKey)!.keyHash
     $0.coins = [token]
 }
 
 // A.k.a to / recipient
-let output = BinanceSendOrder.Output.with {
+let orderOutput = BinanceSendOrder.Output.with {
     $0.address = CosmosAddress(string: "bnb1hlly02l6ahjsgxw9wlcswnlwdhg4xhx38yxpd5")!.keyHash
     $0.coins = [token]
 }
 
-let signingInput = BinanceSigningInput.with {
+let input = BinanceSigningInput.with {
     $0.chainID = "Binance-Chain-Nile" // Testnet Chain id
     $0.accountNumber = 0              // On chain account number
     $0.sequence = 0                   // Sequence number
@@ -309,14 +304,14 @@ let signingInput = BinanceSigningInput.with {
     $0.privateKey = privateKey.data
     $0.memo = ""
     $0.sendOrder = BinanceSendOrder.with {
-        $0.inputs = [input]
-        $0.outputs = [output]
+        $0.inputs = [orderInput]
+        $0.outputs = [orderOutput]
     }
 }
 
-let data = BinanceSigner.sign(input: signingInput)
+let output: BinanceSigningOutput = AnySigner.sign(input: input, coin: .binance)
 // encoded order to broadcast
-print(data.encoded)
+print(output.encoded)
 ```
 
 For more details please check the Binance Chain documentation:
